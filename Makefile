@@ -24,6 +24,7 @@ LDFLAGS=-ldflags "-X ${REPO}/core.Version=${VERSION} -X ${REPO}/core.BuildTime=$
 
 GODEPS=$(subst [,, $(subst ],, $(shell go list -f '{{.Deps}}')))
 GODEPS+= \
+	golang.org/x/tools/cmd/cover \
 	github.com/mattn/goveralls \
 	github.com/julienschmidt/httprouter \
 	github.com/gorilla/context \
