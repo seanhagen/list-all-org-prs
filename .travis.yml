@@ -3,6 +3,6 @@ go:
 - tip
 install: make deps
 script: make test
-before_install:
-- openssl aes-256-cbc -K $encrypted_b6577b661f10_key -iv $encrypted_b6577b661f10_iv
-  -in .coveralls.yml.enc -out .coveralls.yml -d
+env:
+  global:
+    secure: Sb89dpkw3sFvm/i0AfYwdzKh0389ys8TbAZoV9gOZ0fTdC2lyjRmDexFywFIQBpI1YJpZAAf/MFqNeO26sn9+AM1EF1Yi4epGB0uL0XbzHjSwGFLemKp6vu1Wzqbu7in9eZGFrUki7Q0c3o7tCUxj3emCcqJhKS5vuXGBsoAIlhaIUszfSVY9iH5/+xjC0Ytu1Gub8tYspZ8Js5PDq9fUV6TGztNBXMneolQc5u9a7R7Q9ac6HPLUOFzUWjPo1hk8/h3i/scA6kBaY8L9GeWGARyGUwcDtW5hUwaLkNXAVJmPKXB3PuKGImjE+kwAkjMb+keaI5jqFcURHbaQsR02emSpKpb7HHG1aT9rdct1MUwe4d9x85FE5WU63hDeuL/rIfNupd80C4vBKczFwkkH1fagNOwkRUdjatzjWwjfmBZwQr6nJ97NHkuiRi3ttEXPVd9vL4jlGl5wNPDwXsdSst1ngmFu4h0qgL55RTyVfA8SFHo9fD4t3o6SbiPBlh3e4mapheds95ULZL+zBW9bpJn1c6aww2gT/5XxQ/n4r/TH7fLU2SZoKTGTy8E5Re6a23wdFinCt9eFIRUvmSDlnpeX84sMjugqIJYe868sg80wxv3YXDjPmIgqE/h5m30NPICibBmGbZqY2XCNetB+EnEOU/QSyj0eHX4jlSHqn4=
