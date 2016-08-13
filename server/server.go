@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/julienschmidt/httprouter"
-	// "net/http"
+	"net/http"
 )
 
 type AuthType int
@@ -42,4 +42,10 @@ func GetEmptyRoutes() RouteMap {
 		routes[v] = make(map[string]Route)
 	}
 	return routes
+}
+
+func CreateServer(routes RouteMap) http.Handler {
+	router := httprouter.New()
+
+	return router
 }
