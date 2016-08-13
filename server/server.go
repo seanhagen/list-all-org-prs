@@ -8,29 +8,33 @@ import (
 	"os"
 )
 
+// AuthType stores the auth type used to determine if a route needs to check the token
 type AuthType int
 
 const (
-	AUTHNONE  AuthType = 1
+	// AUTHNONE means no checking the token
+	AUTHNONE AuthType = 1
+	// AUTHTOKEN means check for a valid JWT
 	AUTHTOKEN AuthType = 2
 )
 
 type (
-	HandleFunc func() httprouter.Handle
-
-	Route struct {
+	route struct {
 		AuthType AuthType
 		Handler  httprouter.Handle
 	}
 
-	RouteMap map[string]map[string]Route
+	// RouteMap contains the routes used by the application, as a
+	// [HTTP Verb][httprouter Path string]Route map
+	RouteMap map[string]map[string]route
 
+	// Config is used to create the server struct
 	Config struct {
 		Routes      RouteMap
 		Middlewares []alice.Constructor
 	}
 
-	Server struct {
+	server struct {
 		Config
 		Router   httprouter.Handle
 		Port     string
@@ -39,28 +43,29 @@ type (
 	}
 )
 
-// CreateRoute does a thing
-func CreateRoute(auth AuthType, handler httprouter.Handle) Route {
+// CreateRoute takes an AuthType and a handler, and returns a route struct
+func CreateRoute(auth AuthType, handler httprouter.Handle) route {
 	if auth != AUTHTOKEN {
 		auth = AUTHNONE
 	}
 
-	return Route{
+	return route{
 		AuthType: auth,
 		Handler:  handler,
 	}
 }
 
+// GetEmptyRoutes returns an empty RouteMap
 func GetEmptyRoutes() RouteMap {
 	routes := make(RouteMap)
 	verbs := []string{"GET", "PUT", "POST", "OPTIONS", "PATCH", "DELETE"}
 	for _, v := range verbs {
-		routes[v] = make(map[string]Route)
+		routes[v] = make(map[string]route)
 	}
 	return routes
 }
 
-func (s *Server) setupRoutes(h alice.Chain) http.Handler {
+func (s *server) setupRoutes(h alice.Chain) http.Handler {
 	m := map[string]interface{}{
 		"GET":     s.router.GET,
 		"POST":    s.router.POST,
@@ -79,17 +84,18 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 	return h.Then(s.router)
 }
 
-func (s *Server) GetRouter() http.Handler {
+func (s *server) GetRouter() http.Handler {
 	return s.setupRoutes(s.handlers)
 }
 
-func CreateServer(c Config) Server {
+// CreateServer takes a Config struct, and initializes a server
+func CreateServer(c Config) server {
 	var port string
 	if port = os.Getenv("PORT"); len(port) == 0 {
 		port = "8080"
 	}
 
-	s := Server{
+	s := server{
 		Config: c,
 		Port:   ":" + port,
 		router: httprouter.New(),
