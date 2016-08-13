@@ -5,6 +5,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/seanhagen/list-all-org-prs/server"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -26,7 +27,13 @@ func Test_CreateRoute_Good(t *testing.T) {
 	}
 
 	if out.Handler == nil {
-		t.Error("Handler does not match")
+		t.Error("Handler is nil")
+	}
+
+	x := reflect.TypeOf(out.Handler).Kind()
+
+	if x != 0x13 {
+		t.Errorf("Handler is not right type, expected %#v, got: %#v", 0x13, x)
 	}
 }
 
