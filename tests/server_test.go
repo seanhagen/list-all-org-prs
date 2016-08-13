@@ -16,11 +16,11 @@ func TestingHandler() httprouter.Handle {
 
 func Test_CreateRoute_Good(t *testing.T) {
 	goodRoute := server.Route{
-		AuthType: server.AUTH_NONE,
+		AuthType: server.AUTHNONE,
 		Handler:  TestingHandler,
 	}
 
-	out := server.CreateRoute(server.AUTH_NONE, TestingHandler)
+	out := server.CreateRoute(server.AUTHNONE, TestingHandler)
 
 	if out.AuthType != goodRoute.AuthType {
 		t.Error("AuthType does not match")
@@ -38,17 +38,17 @@ func Test_CreateRoute_Good(t *testing.T) {
 }
 
 func Test_CreateRoute_TokenAuth(t *testing.T) {
-	out := server.CreateRoute(server.AUTH_TOKEN, TestingHandler)
+	out := server.CreateRoute(server.AUTHTOKEN, TestingHandler)
 
-	if out.AuthType != server.AUTH_TOKEN {
-		t.Error(fmt.Sprintf("Expected AuthType: %v, got: %v", server.AUTH_TOKEN, out.AuthType))
+	if out.AuthType != server.AUTHTOKEN {
+		t.Error(fmt.Sprintf("Expected AuthType: %v, got: %v", server.AUTHTOKEN, out.AuthType))
 	}
 }
 
 func Test_CreateRoute_FixInvalidAuthType(t *testing.T) {
 	out := server.CreateRoute(3, TestingHandler)
 
-	if out.AuthType != server.AUTH_NONE {
-		t.Error(fmt.Sprintf("Expected AuthType: %v, got: %v", server.AUTH_NONE, out.AuthType))
+	if out.AuthType != server.AUTHNONE {
+		t.Error(fmt.Sprintf("Expected AuthType: %v, got: %v", server.AUTHNONE, out.AuthType))
 	}
 }
