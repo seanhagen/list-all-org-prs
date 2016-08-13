@@ -1,9 +1,8 @@
 language: go
 go:
 - tip
-
-install:
-  make deps
-
-script:
-  make test
+install: make deps
+script: make test
+before_install:
+- openssl aes-256-cbc -K $encrypted_b6577b661f10_key -iv $encrypted_b6577b661f10_iv
+  -in .coveralls.yml.enc -out .coveralls.yml -d

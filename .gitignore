@@ -1,3 +1,4 @@
 /auth
 /out.cov
 /app
+/.coveralls.yml
