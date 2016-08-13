@@ -88,6 +88,8 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 	return h.Then(s.router)
 }
 
+// GetRouter returns the router for use as the http.Handler argument for
+// http.ListenAndServe
 func (s *Server) GetRouter() http.Handler {
 	return s.setupRoutes(s.handlers)
 }
