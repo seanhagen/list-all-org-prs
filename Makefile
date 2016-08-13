@@ -14,7 +14,7 @@ endif
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -type f -name '*.go')
 
-BINARY=auth
+BINARY=app
 
 VERSION=1.0.0
 BUILD_TIME=$(shell date +%FT%T%z)
@@ -50,7 +50,7 @@ generate:
 	go generate
 
 test:
-	go test -coverprofile=out.cov -covermode=atomic -cover ./app
+	go test -coverprofile=out.cov -covermode=atomic -cover ./tests
 	@if [ "$(COVERALLS_TOKEN)" != "" ]; then\
 		goveralls -coverprofile=out.cov;\
 	else \
