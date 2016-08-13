@@ -2,3 +2,8 @@
 /out.cov
 /app
 /.coveralls.yml
+/cover.out
+/server.coverprofile
+/server_5_74.coverprofile
+/test.coverprofile
+/tests_0_4.coverprofile
