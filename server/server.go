@@ -20,7 +20,7 @@ type (
 
 	Route struct {
 		AuthType AuthType
-		Handler  HandleFunc
+		Handler  httprouter.Handle
 	}
 
 	RouteMap map[string]map[string]Route
@@ -32,14 +32,15 @@ type (
 
 	Server struct {
 		Config
-		Router httprouter.Handle
-		Port   string
-		router *httprouter.Router
+		Router   httprouter.Handle
+		Port     string
+		router   *httprouter.Router
+		handlers alice.Chain
 	}
 )
 
 // CreateRoute does a thing
-func CreateRoute(auth AuthType, handler HandleFunc) Route {
+func CreateRoute(auth AuthType, handler httprouter.Handle) Route {
 	if auth != AUTHTOKEN {
 		auth = AUTHNONE
 	}
@@ -71,14 +72,18 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 
 	for verb, v := range s.Config.Routes {
 		for path, route := range v {
-			m[verb].(func(string, HandleFunc))(path, route.Handler)
+			m[verb].(func(string, httprouter.Handle))(path, route.Handler)
 		}
 	}
 
 	return h.Then(s.router)
 }
 
-func CreateServer(c Config) http.Handler {
+func (s *Server) GetRouter() http.Handler {
+	return s.setupRoutes(s.handlers)
+}
+
+func CreateServer(c Config) Server {
 	var port string
 	if port = os.Getenv("PORT"); len(port) == 0 {
 		port = "8080"
@@ -108,7 +113,7 @@ func CreateServer(c Config) http.Handler {
 		h = append(h, c.Middlewares...)
 	}
 
-	handlers := alice.New(h...)
+	s.handlers = alice.New(h...)
 
-	return s.setupRoutes(handlers)
+	return s
 }
