@@ -29,6 +29,7 @@ GODEPS+= \
 	github.com/julienschmidt/httprouter \
 	github.com/gorilla/context \
 	github.com/justinas/alice \
+	github.com/wadey/gocovmerge
 
 define NL
 
@@ -50,13 +51,20 @@ clean:
 generate:
 	go generate
 
-test:
-	go test -coverprofile=out.cov -covermode=atomic -cover ./tests
+test_tests:
+	go test -v -coverprofile=test.coverprofile -covermode=atomic -cover ./tests
+
+test_server:
+	go test -v -coverprofile=server.coverprofile -covermode=atomic -cover ./server
+
+test: test_tests test_server
+	gocovmerge `ls *.coverprofile` > cover.out
 	@if [ "$(COVERALLS_TOKEN)" != "" ]; then\
-		goveralls -coverprofile=out.cov;\
+		goveralls -coverprofile=cover.out;\
 	else \
 		echo "not submitting to coveralls, COVERALLS_TOKEN not set"; \
 	fi
+	rm *.coverprofile
 
 vet:
 	go vet
