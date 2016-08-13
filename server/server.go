@@ -118,6 +118,7 @@ func CreateServer(c Config) Server {
 	)
 
 	h := []alice.Constructor{
+		tokenAuth(c.Routes),
 		corHandler.Handler,
 	}
 
