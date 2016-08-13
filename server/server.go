@@ -2,7 +2,7 @@ package server
 
 import (
 	"github.com/julienschmidt/httprouter"
-	"net/http"
+	// "net/http"
 )
 
 type AuthType int
