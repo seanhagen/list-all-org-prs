@@ -3,3 +3,8 @@ vm: true
 version: alpha-001
 runtime: go
 api_version: go
+
+env_variables:
+  DATABASE: mysql://root@localhost
+  GITHUB_KEY: your-key-here
+  GITHUB_SECRET: your-secret-here
