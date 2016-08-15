@@ -37,7 +37,9 @@ define NL
 endef
 
 .DEFAULT_GOAL: $(BINARY)
-.PHONY: clean generate test vet all install deps
+.PHONY: clean generate test vet all install deps build
+
+build: vet generate test $(BINARY)
 
 $(BINARY): $(SOURCES)
 	go build ${LDFLAGS} -o ${BINARY}
@@ -64,7 +66,6 @@ test: test_tests test_server
 	else \
 		echo "not submitting to coveralls, COVERALLS_TOKEN not set"; \
 	fi
-	rm *.coverprofile
 
 vet:
 	go vet
