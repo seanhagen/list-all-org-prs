@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 	"github.com/rs/cors"
+	"log"
 	"net/http"
 	"os"
 )
@@ -88,10 +90,11 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 	return h.Then(s.router)
 }
 
-// GetRouter returns the router for use as the http.Handler argument for
-// http.ListenAndServe
-func (s *Server) GetRouter() http.Handler {
-	return s.setupRoutes(s.handlers)
+// Start starts up the server to begin serving routes
+func (s *Server) Start() {
+	s.setupRoutes(s.handlers)
+	fmt.Printf("Starting server on port %#v\n", s.Port)
+	log.Fatal(http.ListenAndServe(s.Port, s.router))
 }
 
 // CreateServer takes a Config struct, and initializes a server
@@ -120,6 +123,7 @@ func CreateServer(c Config) Server {
 	h := []alice.Constructor{
 		tokenAuth(c.Routes),
 		corHandler.Handler,
+		logMiddleware,
 	}
 
 	if c.Middlewares != nil && len(c.Middlewares) > 0 {
@@ -127,6 +131,5 @@ func CreateServer(c Config) Server {
 	}
 
 	s.handlers = alice.New(h...)
-
 	return s
 }
