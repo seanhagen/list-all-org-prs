@@ -1,8 +1,12 @@
 package server
 
 import (
+	"github.com/gorilla/sessions"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/github"
 	"github.com/rs/cors"
 	"net/http"
 	"os"
@@ -30,25 +34,23 @@ type (
 	// [HTTP Verb][httprouter Path string]Route map
 	RouteMap map[string]map[string]Route
 
-	// Config is used to create the server struct
-	Config struct {
-		Routes      RouteMap
-		Middlewares []alice.Constructor
-	}
-
 	// Server is the struct used to contain all the info as well as helper functions.
 	// Port and the return value from GetRouter() are passed into http.ListenAndServe
 	Server struct {
-		Config
-		Router   httprouter.Handle
-		Port     string
-		router   *httprouter.Router
-		handlers alice.Chain
+		Routes      RouteMap
+		Router      http.Handler
+		Port        string
+		router      *httprouter.Router
+		handlers    alice.Chain
+		middlewares []alice.Constructor
 	}
 )
 
-// CreateRoute takes an AuthType and a handler, and returns a route struct
-func CreateRoute(auth AuthType, handler httprouter.Handle) Route {
+func init() {
+	gothic.Store = sessions.NewFilesystemStore(os.TempDir(), []byte("list-all-org-prs"))
+}
+
+func createRoute(auth AuthType, handler httprouter.Handle) Route {
 	if auth != AUTHTOKEN {
 		auth = AUTHNONE
 	}
@@ -59,14 +61,23 @@ func CreateRoute(auth AuthType, handler httprouter.Handle) Route {
 	}
 }
 
-// GetEmptyRoutes returns an empty RouteMap
-func GetEmptyRoutes() RouteMap {
+func getEmptyRoutes() RouteMap {
 	routes := make(RouteMap)
 	verbs := []string{"GET", "PUT", "POST", "OPTIONS", "PATCH", "DELETE"}
 	for _, v := range verbs {
 		routes[v] = make(map[string]Route)
 	}
 	return routes
+}
+
+func (s *Server) setupGothic() {
+	goth.UseProviders(
+		github.New(
+			os.Getenv("GITHUB_KEY"),
+			os.Getenv("GITHUB_SECRET"),
+			"http://localhost:8080/auth/github/callback",
+		),
+	)
 }
 
 func (s *Server) setupRoutes(h alice.Chain) http.Handler {
@@ -79,7 +90,7 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 		"OPTIONS": s.router.OPTIONS,
 	}
 
-	for verb, v := range s.Config.Routes {
+	for verb, v := range s.Routes {
 		for path, route := range v {
 			m[verb].(func(string, httprouter.Handle))(path, route.Handler)
 		}
@@ -88,25 +99,16 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 	return h.Then(s.router)
 }
 
-// GetRouter returns the router for use as the http.Handler argument for
-// http.ListenAndServe
-func (s *Server) GetRouter() http.Handler {
-	return s.setupRoutes(s.handlers)
+func (s *Server) buildRoutes() {
+	r := getEmptyRoutes()
+	r["GET"]["/"] = createRoute(AUTHNONE, buildIndexRoute())
+	r["GET"]["/auth/:provider/callback"] = createRoute(AUTHNONE, buildCallbackRoute())
+	r["GET"]["/auth/:provider"] = createRoute(AUTHNONE, buildProviderRoute())
+
+	s.Routes = r
 }
 
-// CreateServer takes a Config struct, and initializes a server
-func CreateServer(c Config) Server {
-	var port string
-	if port = os.Getenv("PORT"); len(port) == 0 {
-		port = "8080"
-	}
-
-	s := Server{
-		Config: c,
-		Port:   ":" + port,
-		router: httprouter.New(),
-	}
-
+func (s *Server) setupMiddlewares() {
 	corHandler := cors.New(
 		cors.Options{
 			AllowedOrigins:   []string{"*"},
@@ -118,14 +120,34 @@ func CreateServer(c Config) Server {
 	)
 
 	h := []alice.Constructor{
+		tokenAuth(s),
 		corHandler.Handler,
+		logMiddleware,
 	}
 
-	if c.Middlewares != nil && len(c.Middlewares) > 0 {
-		h = append(h, c.Middlewares...)
+	if s.middlewares != nil && len(s.middlewares) > 0 {
+		h = append(h, s.middlewares...)
 	}
 
-	s.handlers = alice.New(h...)
+	s.middlewares = h
+}
 
+// CreateServer takes a Config struct, and initializes a server
+func CreateServer() Server {
+	var port string
+	if port = os.Getenv("PORT"); len(port) == 0 {
+		port = "8080"
+	}
+
+	s := Server{
+		Port:   port,
+		router: httprouter.New(),
+	}
+	s.buildRoutes()
+	s.setupGothic()
+	s.setupMiddlewares()
+
+	handler := alice.New(s.middlewares...)
+	s.Router = s.setupRoutes(handler)
 	return s
 }

@@ -14,7 +14,7 @@ endif
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -type f -name '*.go')
 
-BINARY=app
+BINARY=laop
 
 VERSION=1.0.0
 BUILD_TIME=$(shell date +%FT%T%z)
@@ -24,10 +24,14 @@ LDFLAGS=-ldflags "-X ${REPO}/core.Version=${VERSION} -X ${REPO}/core.BuildTime=$
 
 GODEPS=$(subst [,, $(subst ],, $(shell go list -f '{{.Deps}}')))
 GODEPS+= \
+	golang.org/x/tools/cmd/cover \
 	github.com/mattn/goveralls \
 	github.com/julienschmidt/httprouter \
 	github.com/gorilla/context \
 	github.com/justinas/alice \
+	github.com/wadey/gocovmerge \
+	github.com/alecthomas/gometalinter
+
 
 define NL
 
@@ -35,13 +39,18 @@ define NL
 endef
 
 .DEFAULT_GOAL: $(BINARY)
-.PHONY: clean generate test vet all install deps
+.PHONY: clean generate test vet all install deps build
+
+SUBDIRS := $(shell find . -type d -not -name '.*' | grep -v git | grep -v tests | grep -v db)
+install: queries deps; $(foreach dir,$(SUBDIRS),(cd $(dir) && go install . )&&) :
+
+build: queries vet generate test $(BINARY)
 
 $(BINARY): $(SOURCES)
 	go build ${LDFLAGS} -o ${BINARY}
 
 queries: db/queries.sql
-	gotic -package app db/queries.sql > app/queries.go
+	gotic -package server db/queries.sql > server/queries.go
 
 clean:
 	if [ -f ${BINARY} ] ; then rm ${BINARY} ; fi
@@ -49,19 +58,23 @@ clean:
 generate:
 	go generate
 
-test:
-	go test -coverprofile=out.cov -covermode=atomic -cover ./tests
+test_server:
+	go test -v -coverprofile=server.coverprofile -covermode=atomic -cover ./server
+
+test: test_server
+	gocovmerge `ls *.coverprofile` > cover.out
 	@if [ "$(COVERALLS_TOKEN)" != "" ]; then\
-		goveralls -coverprofile=out.cov;\
+		goveralls -coverprofile=cover.out;\
 	else \
 		echo "not submitting to coveralls, COVERALLS_TOKEN not set"; \
 	fi
 
-vet:
-	go vet
+lint:
+	gometalinter --deadline=10s
 
 deps:
 	$(foreach dep,$(GODEPS),go get $(dep)$(NL))
+	gometalinter --install
 
 all: generate $(BINARY) test vet
 
