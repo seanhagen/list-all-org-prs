@@ -1,0 +1,7 @@
+development:
+  driver: postgres
+  open: user=laop_admin password='laop rocks' dbname=laop_dev sslmode=disable host=127.0.0.1
+
+production:
+  driver: postgres
+  open: $DATABASE
