@@ -38,7 +38,7 @@ define NL
 
 endef
 
-.DEFAULT_GOAL: $(BINARY)
+.DEFAULT_GOAL: build
 .PHONY: clean generate test vet all install deps build
 
 SUBDIRS := $(shell find . -type d -not -name '.*' | grep -v git | grep -v tests | grep -v db)
