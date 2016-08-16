@@ -1,0 +1,13 @@
+{
+    "name": "List All Organization PRs",
+    "description": "See all open Pull Requests for an organization",
+    "keywords": [
+        "github",
+        "go",
+        "pull-requests"
+    ],
+    "image": "heroku/go:1.6",
+    "mount_dir": "src/github.com/seanhagen/list-all-org-prs",
+    "website": "http://github.com/seanhagen/list-all-org-prs",
+    "repository": "http://github.com/seanhagen/list-all-org-prs"
+}
