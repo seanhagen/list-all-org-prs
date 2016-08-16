@@ -4,17 +4,33 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
-func tokenAuth(routes RouteMap) func(http.Handler) http.Handler {
+func getProperPath(r *http.Request, s *Server) string {
+	path := r.URL.Path
+
+	_, params, _ := s.router.Lookup(r.Method, r.URL.Path)
+	for _, p := range params {
+		r := ":" + p.Key
+		path = strings.Replace(path, p.Value, r, -1)
+	}
+	return path
+}
+
+func tokenAuth(s *Server) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			route := routes[r.Method][r.URL.Path]
+			path := getProperPath(r, s)
+			route := s.Routes[r.Method][path]
 
 			switch route.AuthType {
 			case AUTHTOKEN:
 				authToken(h, w, r)
+				return
 			}
+
+			h.ServeHTTP(w, r)
 		})
 	}
 }
