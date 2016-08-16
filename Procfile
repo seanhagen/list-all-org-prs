@@ -1,1 +1,1 @@
-web: laop
+web: list-all-org-prs
