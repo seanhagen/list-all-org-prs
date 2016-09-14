@@ -14,7 +14,7 @@ endif
 SOURCEDIR=.
 SOURCES := $(shell find $(SOURCEDIR) -type f -name '*.go')
 
-BINARY=assets
+BINARY=lprs
 
 VERSION=1.0.0
 BUILD_TIME=$(shell date +%FT%T%z)
