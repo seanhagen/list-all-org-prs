@@ -1,13 +1,13 @@
 package server
 
 import (
-	"github.com/gorilla/sessions"
+	// "github.com/gorilla/sessions"
+	gh "github.com/google/go-github/github"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/github"
 	"github.com/rs/cors"
+	"golang.org/x/oauth2"
 	"net/http"
 	"os"
 )
@@ -42,13 +42,10 @@ type (
 		Port        string
 		router      *httprouter.Router
 		handlers    alice.Chain
+		oauth       *oauth2.Config
 		middlewares []alice.Constructor
 	}
 )
-
-func init() {
-	gothic.Store = sessions.NewFilesystemStore(os.TempDir(), []byte("list-all-org-prs"))
-}
 
 func createRoute(auth AuthType, handler httprouter.Handle) Route {
 	if auth != AUTHTOKEN {
@@ -70,14 +67,20 @@ func getEmptyRoutes() RouteMap {
 	return routes
 }
 
-func (s *Server) setupGothic() {
-	goth.UseProviders(
-		github.New(
-			os.Getenv("GITHUB_KEY"),
-			os.Getenv("GITHUB_SECRET"),
-			"http://localhost:8080/auth/github/callback",
-		),
-	)
+func (s *Server) setupOauth() {
+	s.oauth = &oauth2.Config{
+		ClientID:     os.Getenv("GITHUB_KEY"),
+		ClientSecret: os.Getenv("GITHUB_SECRET"),
+		Scopes: []string{
+			string(gh.ScopeReadOrg),
+			string(gh.ScopePublicRepo),
+			string(gh.ScopeRepoStatus),
+		},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  github.AuthURL,
+			TokenURL: github.TokenURL,
+		},
+	}
 }
 
 func (s *Server) setupRoutes(h alice.Chain) http.Handler {
@@ -102,8 +105,8 @@ func (s *Server) setupRoutes(h alice.Chain) http.Handler {
 func (s *Server) buildRoutes() {
 	r := getEmptyRoutes()
 	r["GET"]["/"] = createRoute(AUTHNONE, buildIndexRoute())
-	r["GET"]["/auth/:provider/callback"] = createRoute(AUTHNONE, buildCallbackRoute())
-	r["GET"]["/auth/:provider"] = createRoute(AUTHNONE, buildProviderRoute())
+	r["GET"]["/auth/callback"] = createRoute(AUTHNONE, buildCallbackRoute(s))
+	r["GET"]["/auth/"] = createRoute(AUTHNONE, buildProviderRoute(s))
 
 	s.Routes = r
 }
@@ -122,7 +125,6 @@ func (s *Server) setupMiddlewares() {
 	h := []alice.Constructor{
 		tokenAuth(s),
 		corHandler.Handler,
-		logMiddleware,
 	}
 
 	if s.middlewares != nil && len(s.middlewares) > 0 {
@@ -144,7 +146,7 @@ func CreateServer() Server {
 		router: httprouter.New(),
 	}
 	s.buildRoutes()
-	s.setupGothic()
+	s.setupOauth()
 	s.setupMiddlewares()
 
 	handler := alice.New(s.middlewares...)

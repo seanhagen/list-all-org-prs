@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -22,7 +20,12 @@ func tokenAuth(s *Server) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			path := getProperPath(r, s)
-			route := s.Routes[r.Method][path]
+
+			var route Route
+			method := s.Routes[r.Method]
+			if method != nil {
+				route = s.Routes[r.Method][path]
+			}
 
 			switch route.AuthType {
 			case AUTHTOKEN:
@@ -37,13 +40,4 @@ func tokenAuth(s *Server) func(http.Handler) http.Handler {
 
 func authToken(h http.Handler, w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
-}
-
-func logMiddleware(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		out := fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
-		fmt.Println(out)
-		log.Println(out)
-		handler.ServeHTTP(w, r)
-	})
 }
