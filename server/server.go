@@ -74,7 +74,6 @@ func (s *Server) setupOauth() {
 		Scopes: []string{
 			string(gh.ScopeReadOrg),
 			string(gh.ScopePublicRepo),
-			string(gh.ScopeRepoStatus),
 		},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  github.AuthURL,
@@ -106,7 +105,8 @@ func (s *Server) buildRoutes() {
 	r := getEmptyRoutes()
 	r["GET"]["/"] = createRoute(AUTHNONE, buildIndexRoute())
 	r["GET"]["/auth/callback"] = createRoute(AUTHNONE, buildCallbackRoute(s))
-	r["GET"]["/auth/"] = createRoute(AUTHNONE, buildProviderRoute(s))
+	r["GET"]["/auth"] = createRoute(AUTHNONE, buildAuthRoute(s))
+	r["GET"]["/login"] = createRoute(AUTHNONE, buildLoginDisplayRoute())
 
 	s.Routes = r
 }
